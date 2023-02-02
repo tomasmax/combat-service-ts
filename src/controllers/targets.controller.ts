@@ -8,7 +8,7 @@ class TargetsController {
 
   public getTargetCoordinate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const targetsDto: CreateTargetsDto = req.body;
+      const targetsDto: CreateTargetsDto = new CreateTargetsDto(req.body);
       const targetCoordinate: Coordinate = await this.targetService.getTargetCoordinate(targetsDto);
 
       res.status(200).json(targetCoordinate);

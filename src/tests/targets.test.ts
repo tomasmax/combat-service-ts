@@ -349,7 +349,7 @@ afterAll(async () => {
 describe('Testing Targets', () => {
   describe('[POST] targets/radar', () => {
     testCases.forEach(({ body, response }) =>
-      it(`with body.protocols: [${body.protocols.toString()}] should response statusCode 200 / correct target coordinates`, async () => {
+      it(`Should response statusCode 200 with correct target coordinates for a body with protocols: [${body.protocols.toString()}]`, async () => {
         const targetsData: CreateTargetsDto = body;
         const targetsRoute = new TargetsRoute();
         const app = new App([targetsRoute]);
@@ -357,5 +357,12 @@ describe('Testing Targets', () => {
         return request(app.getServer()).post(`${targetsRoute.path}/radar`).send(targetsData).expect(200, response);
       }),
     );
+
+    it('Should get a 400 for a wrong body', async () => {
+      const targetsRoute = new TargetsRoute();
+      const app = new App([targetsRoute]);
+
+      return request(app.getServer()).post(`${targetsRoute.path}/radar`).send({ protocols: 'wrong', scan: 'wrong' }).expect(400);
+    });
   });
 });

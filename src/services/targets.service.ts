@@ -1,87 +1,57 @@
-import { Enemy, EnemyType } from '@/interfaces/enemies.interface';
-import { Protocol, ProtocolEnum, PROTOCOL_EXECUTION_PATTERN } from '@/interfaces/protocols.type';
-import { Scan } from '@/interfaces/scan.interface';
-import CoordinateModel from '@/models/coordinate.model';
+import { Protocol, ProtocolEnum } from '@/interfaces/protocols.type';
+import { Target } from '@/interfaces/target.interface';
 import { CreateTargetsDto } from '@dtos/targets.dto';
 import { HttpException } from '@exceptions/HttpException';
 import { Coordinate } from '@interfaces/coordinate.interface';
-import { isEmpty, sortArrayByPattern } from '@utils/util';
-
-const MAX_DISTANCE = 100;
-
-const isCloser = (currentDistance: number, minDistance: number): boolean => currentDistance < minDistance;
-const isFurther = (currentDistance: number, maxDistance: number): boolean => currentDistance > maxDistance && currentDistance <= MAX_DISTANCE;
-const isAPossibleTargetCoordinate = ({
-  isClosest,
-  currentDistance,
-  lastMaxOrMinDistance,
-}: {
-  isClosest: boolean;
-  currentDistance: number;
-  lastMaxOrMinDistance: number;
-}): boolean => (isClosest ? isCloser(currentDistance, lastMaxOrMinDistance) : isFurther(currentDistance, lastMaxOrMinDistance));
-
-const isMech = ({ enemies }: { enemies: Enemy }): boolean => enemies.type === EnemyType.MECH;
-const isAlly = ({ allies }: { allies?: number }): boolean => allies > 0;
-
-function getTarget({ scan, isClosest = true }: { scan: Scan[]; isClosest?: boolean }) {
-  let lastMaxOrMinDistance: number = isClosest ? Infinity : 0;
-  let targetCoordinate: Coordinate;
-
-  scan.forEach(({ coordinates }: { coordinates: Coordinate }) => {
-    const coordinate = new CoordinateModel(coordinates);
-    const currentDistance = coordinate.calculateDistance();
-    if (
-      isAPossibleTargetCoordinate({
-        isClosest,
-        currentDistance,
-        lastMaxOrMinDistance,
-      })
-    ) {
-      lastMaxOrMinDistance = currentDistance;
-      targetCoordinate = coordinate;
-    }
-  });
-  return targetCoordinate;
-}
+import { isEmpty } from '@utils/util';
 
 class TargetService {
+  private getTargetFromScan({ scan, isClosest = true }: { scan: Target[]; isClosest?: boolean }) {
+    let lastMaxOrMinDistance: number = isClosest ? Infinity : 0;
+    let targetCoordinate: Coordinate;
+
+    for (const target of scan) {
+      if (target.isAPossibleTargetCoordinate({ isClosest, lastMaxOrMinDistance })) {
+        lastMaxOrMinDistance = target.distanceFromRadar;
+        targetCoordinate = target.coordinates;
+      }
+    }
+    return targetCoordinate;
+  }
+
   public async getTargetCoordinate(targetsData: CreateTargetsDto): Promise<Coordinate> {
     if (isEmpty(targetsData)) throw new HttpException(400, 'targets data is empty');
 
-    const { protocols, scan }: { protocols: Protocol; scan: Scan[] } = targetsData;
+    const { protocols, scan }: { protocols?: Protocol; scan?: Target[] } = targetsData;
     let result: Coordinate;
-    let filteredScan: Scan[];
-    const sortedProtocols = sortArrayByPattern({
-      array: protocols,
-      pattern: PROTOCOL_EXECUTION_PATTERN,
-    });
-    sortedProtocols.forEach(protocol => {
+    let filteredScan: Target[];
+
+    for (const protocol of protocols) {
       switch (protocol) {
         case ProtocolEnum.CLOSEST_ENEMIES:
-          result = getTarget({ scan: filteredScan || scan, isClosest: true });
+          result = this.getTargetFromScan({ scan: filteredScan || scan, isClosest: true });
           break;
         case ProtocolEnum.AVOID_MECH:
-          filteredScan = (filteredScan || scan).filter(target => !isMech(target));
-          result = getTarget({ scan: filteredScan.length ? filteredScan : scan });
+          filteredScan = (filteredScan || scan).filter((target: Target) => !target.isMech());
+          result = this.getTargetFromScan({ scan: filteredScan.length ? filteredScan : scan });
           break;
         case ProtocolEnum.PRIORITIZE_MECH:
-          filteredScan = (filteredScan || scan).filter(target => isMech(target));
-          result = getTarget({ scan: filteredScan.length ? filteredScan : scan });
+          filteredScan = (filteredScan || scan).filter((target: Target) => target.isMech());
+          result = this.getTargetFromScan({ scan: filteredScan.length ? filteredScan : scan });
           break;
         case ProtocolEnum.FURTHEST_ENEMIES:
-          result = getTarget({ scan: filteredScan || scan, isClosest: false });
+          result = this.getTargetFromScan({ scan: filteredScan || scan, isClosest: false });
           break;
         case ProtocolEnum.ASSIST_ALLIES:
-          filteredScan = (filteredScan || scan).filter(target => isAlly(target));
-          result = getTarget({ scan: filteredScan.length ? filteredScan : scan });
+          filteredScan = (filteredScan || scan).filter((target: Target) => target.hasAllies());
+          result = this.getTargetFromScan({ scan: filteredScan.length ? filteredScan : scan });
           break;
         case ProtocolEnum.AVOID_CROOSFIRE:
-          filteredScan = (filteredScan || scan).filter(target => !isAlly(target));
-          result = getTarget({ scan: filteredScan.length ? filteredScan : scan });
+          filteredScan = (filteredScan || scan).filter((target: Target) => !target.hasAllies());
+          result = this.getTargetFromScan({ scan: filteredScan.length ? filteredScan : scan });
           break;
       }
-    });
+    }
     return result;
   }
 }
