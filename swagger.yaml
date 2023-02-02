@@ -1,0 +1,44 @@
+tags:
+- name: targets
+  description: targets API
+
+# [POST] targets/radar
+  post:
+    tags:
+    - targets
+    summary: Get next target coordinates
+    parameters:
+    - name: body
+      in: body
+      description: targets Data
+      required: true
+      schema:
+        $ref: '#/definitions/users'
+    responses:
+      200:
+        description: 'OK'
+      400:
+        description: 'Bad Request'
+      409:
+        description: 'Conflict'
+      500:
+        description: 'Server Error'
+
+# definitions
+definitions:
+  targets:
+    type: object
+    required:
+        - protocols
+        - scan
+    properties:
+      protocols:
+        type: array
+        description: possible protocols to get next target
+      scan:
+        type: array
+        description: targets array data
+
+schemes:
+ - https
+ - http

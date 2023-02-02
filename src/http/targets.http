@@ -1,0 +1,12 @@
+# baseURL
+@baseURL = http://localhost:3000
+
+###
+# Radar
+POST {{ baseURL }}/targets/radar
+Content-Type: application/json
+
+{
+  "protocols":["avoid-mech"],
+	"scan":[{"coordinates":{"x":0,"y":40},"enemies":{"type":"soldier","number":10}}]
+}
