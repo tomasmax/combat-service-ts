@@ -1,16 +1,16 @@
 export enum ProtocolEnum {
-  // Se deberá priorizar el punto más cercano en el que haya enemigos.
+  // Prioritize closest enemy target
   CLOSEST_ENEMIES = 'closest-enemies',
-  // Se deberá priorizar el punto más lejano en el que haya enemigos.
+  // Prioritize furthest enemy target
   FURTHEST_ENEMIES = 'furthest-enemies',
-  // Deberan de priorizarse los puntos en los que exista algún aliado.
+  // Prioritize allies targets
   ASSIST_ALLIES = 'assist-allies',
-  // No debe de atacarse ningún punto en el que haya algún aliado.
+  // Don't attack any target with allies
   AVOID_CROOSFIRE = 'avoid-crossfire',
-  // Debe de atacarse un mech si se encuentra.
-  // En caso negativo, cualquier otro tipo de objetivo será válido.
+  // Attack a mech target
+  // Otherwise attack another target
   PRIORITIZE_MECH = 'prioritize-mech',
-  // No debe de atacarse ningún enemigo del tipo mech
+  // Don't attack mech targets
   AVOID_MECH = 'avoid-mech',
 }
 

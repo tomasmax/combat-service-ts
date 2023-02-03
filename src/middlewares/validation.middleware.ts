@@ -20,7 +20,6 @@ const validationMiddleware = (
         const message = errors.map((error: ValidationError) => Object.values(error.constraints)).join(', ');
         next(new HttpException(400, message));
       } else {
-        console.log('***next', errors);
         next();
       }
     });
